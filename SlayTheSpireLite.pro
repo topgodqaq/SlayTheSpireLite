@@ -13,10 +13,12 @@ QMAKE_CXXFLAGS += -std=c++17
 SOURCES += \
     main.cpp \
     src/core/card.cpp \
+    src/core/enemy.cpp \
     src/core/player.cpp
 
 HEADERS += \
     src/core/card.h \
+    src/core/enemy.h \
     src/core/player.h
 
 # 资源文件（可选）

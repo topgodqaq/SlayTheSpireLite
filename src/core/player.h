@@ -1,9 +1,11 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
+#include <QVector>
 #include "card.h"
-class Player
-{
+#include "enemy.h"
+
+class Player {
 public:
     // 构造
     Player(int maxHp = 80, int maxEnergy = 3);
@@ -20,7 +22,7 @@ public:
     const QVector<Card>& getHand() const { return hand; }
 
     // 战斗操作
-    bool playCard(int cardIndex, int targetIndex = 0);
+    bool playCard(int cardIndex, int targetIndex, QVector<Enemy>& enemies);
     void endTurn();
     void startTurn();
     void drawCards(int count);
@@ -35,15 +37,38 @@ public:
     void addCardToDeck(const Card& card);
     void removeCardFromDeck(int index);
 
-    //准备战斗
+    // 状态效果管理
+    int getWeak() const { return weak; }          // 虚弱层数
+    int getVulnerable() const { return vulnerable; } // 易伤层数
+    int getFrail() const { return frail; }        // 脆弱层数
+    void addStatus(const QString& status, int value);
+    void endTurnStatusUpdate();  // 回合结束时更新状态层数
+
+    // 计算实际效果
+    int calculateActualDamage(int baseDamage) const;
+    int calculateActualBlock(int baseBlock) const;
+    int calculateDamageTaken(int baseDamage) const;
+
+    //战斗前卡组准备
     void prepareForBattle();
+    // 状态描述
+    QString getStatusText() const;
+
+    // 卡牌效果
+    void applyCardEffect(const Card& card, int targetIndex, QVector<Enemy>& enemies);
 
 private:
+    // 基础属性
     int currentHp;
     int maxHp;
-    int block = 0;           //格挡值
+    int block = 0;
     int currentEnergy;
     int maxEnergy;
+
+    // 状态效果
+    int weak = 0;        // 虚弱：攻击伤害-25%
+    int vulnerable = 0;  // 易伤：受到的伤害+50%
+    int frail = 0;       // 脆弱：获得的格挡-25%
 
     // 卡牌集合
     QVector<Card> deck;      // 完整卡组
