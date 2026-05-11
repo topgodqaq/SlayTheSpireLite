@@ -2,25 +2,25 @@
 #include <QRandomGenerator>
 #include <QDebug>
 
+// 构造函数，根据类型设置基础属性
 Enemy::Enemy(QString name, int maxHp, Type type)
     : name(name)
     , type(type)
     , maxHp(maxHp)
     , currentHp(maxHp)
 {
-    // 根据敌人类型设置基础属性
+    // 根据敌人类型设置初始属性
     switch (type) {
-    case Slime:
-        baseAttackDamage = 6;
-        break;
-    case Goblin:
-        baseAttackDamage = 8;
+    case Slime_A:
+    case Slime_B:
+        baseAttackDamage = 7;
         break;
     case Cultist:
         baseAttackDamage = 5;
         break;
     case Sentinel:
         baseAttackDamage = 7;
+        artifact = 1;  // 哨卫初始有1层人工制品
         break;
     case Boss:
         baseAttackDamage = 10;
@@ -33,11 +33,11 @@ Enemy::Enemy(QString name, int maxHp, Type type)
 
 void Enemy::generateIntent() {
     switch (type) {
-    case Slime:
-        generateSlimeIntent();
+    case Slime_A:
+        generateSlimeAIntent();
         break;
-    case Goblin:
-        generateGoblinIntent();
+    case Slime_B:
+        generateSlimeBIntent();
         break;
     case Cultist:
         generateCultistIntent();
@@ -46,79 +46,177 @@ void Enemy::generateIntent() {
         generateSentinelIntent();
         break;
     case Boss:
-        // BOSS可以有更复杂的意图
+        // TODO：BOSS可以有更复杂的意图
         nextIntent = (QRandomGenerator::global()->bounded(100) < 70) ? Attack : Block;
         intentValue = (nextIntent == Attack) ? 12 : 8;
         break;
     }
 }
 
-// 史莱姆：60%攻击，40%防御
-void Enemy::generateSlimeIntent() {
+// 史莱姆A：60%攻击 40%虚弱
+void Enemy::generateSlimeAIntent() {
     int roll = QRandomGenerator::global()->bounded(100);
+
     if (roll < 60) {
+        // 60%概率：攻击
         nextIntent = Attack;
         intentValue = baseAttackDamage;
+        intentTimes = 1;
     } else {
-        nextIntent = Block;
-        intentValue = 6;
+        // 40%概率：施加虚弱
+        nextIntent = Debuff_Weak;
+        intentValue = 1;  // 1层虚弱
+        intentTimes = 1;
     }
 }
 
-// 哥布林：80%攻击，20%防御
-void Enemy::generateGoblinIntent() {
+// 史莱姆B：60%攻击 40%易伤
+void Enemy::generateSlimeBIntent() {
     int roll = QRandomGenerator::global()->bounded(100);
-    if (roll < 80) {
+
+    if (roll < 60) {
+        // 60%概率：攻击
         nextIntent = Attack;
         intentValue = baseAttackDamage;
+        intentTimes = 1;
     } else {
-        nextIntent = Block;
-        intentValue = 4;
+        // 40%概率：施加易伤
+        nextIntent = Debuff_Vulnerable;
+        intentValue = 1;  // 1层易伤
+        intentTimes = 1;
     }
 }
 
-// 邪教徒：50%攻击，30%增益，20%特殊
+// 邪教徒：第一回合增益，之后每回合攻击
 void Enemy::generateCultistIntent() {
-    int roll = QRandomGenerator::global()->bounded(100);
-    if (roll < 50) {
-        nextIntent = Attack;
-        intentValue = baseAttackDamage;
-    } else if (roll < 80) {
+    if (!ritualStarted) {
+        // 第一回合：开始仪式
         nextIntent = Buff;
-        intentValue = 2;  // 增益值
+        intentValue = 3;  // 仪式值
+        intentTimes = 1;
+        ritualStarted = true;
     } else {
-        nextIntent = Special;
-        intentValue = 1;  // 特殊行动
+        // 后续回合：攻击
+        nextIntent = Attack;
+        intentValue = calculateActualDamage(baseAttackDamage + strength);
+        intentTimes = 1;
     }
 }
 
-// 哨卫：40%攻击，60%防御
+int Enemy::calculateActualDamage(int baseDamage) const {
+    int damage = baseDamage;
+
+    // 虚弱效果：伤害-25%
+    if (weak > 0) {
+        damage = damage * 0.75;
+    }
+
+    return damage;
+}
+
+int Enemy::calculateActualBlock(int baseBlock) const {
+    int block = baseBlock;
+
+    //脆弱效果： 格挡值-25%
+    if (frail > 0) {
+        block = block *0.75;
+    }
+    return block;
+}
+
+// 处理邪教徒仪式
+void Enemy::processCultistRitual() {
+    if (nextIntent == Buff) {
+        // 增加仪式计数
+        ritualCount++;
+        qDebug() << name << "的仪式进展：" << ritualCount << "/3";
+
+        if (ritualCount >= 3) {
+            // 仪式完成，获得3力量
+            gainStrength(3);
+            qDebug() << name << "仪式完成！获得3点力量，当前力量：" << strength;
+        }
+    }
+}
+
+// 哨卫：60%多段伤害40%单段伤害
 void Enemy::generateSentinelIntent() {
     int roll = QRandomGenerator::global()->bounded(100);
-    if (roll < 40) {
+
+    if (roll < 60) {
+        // 60%概率：多段攻击（3×5伤害）
+        nextIntent = MultiAttack;
+        intentValue = 5;  // 每段伤害
+        intentTimes = 3;  // 攻击3次
+    } else {
+        // 40%概率：单段攻击
         nextIntent = Attack;
         intentValue = baseAttackDamage;
-    } else {
-        nextIntent = Block;
-        intentValue = 9;
+        intentTimes = 1;
     }
 }
 
+// 触发人工制品
+void Enemy::triggerArtifact() {
+    if (artifact > 0) {
+        artifact--;
+        qDebug() << name << "的人工制品阻挡了一次负面效果";
+    }
+}
+
+// 添加状态（考虑人工制品）
+void Enemy::addStatus(const QString& status, int value) {
+    if (artifact > 0) {
+        // 有人工制品，阻挡这次负面效果
+        triggerArtifact();
+        return;
+    }
+
+    if (status == "vulnerable") {
+        vulnerable += value;
+        qDebug() << name << "获得" << value << "层易伤";
+    } else if (status == "weak") {
+        weak += value;
+        qDebug() << name << "获得" << value << "层虚弱";
+    } else if (status == "frail") {
+        frail += value;
+        qDebug() << name << "获得" << value << "层脆弱";
+    }
+}
+
+// 获取意图描述
 QString Enemy::getIntentDescription() const {
     switch (nextIntent) {
     case Attack:
         return QString("攻击：%1点伤害").arg(intentValue);
+    case MultiAttack:
+        return QString("多重攻击：%1×%2点伤害").arg(intentTimes).arg(intentValue);
     case Block:
         return QString("防御：获得%1点格挡").arg(intentValue);
     case Buff:
+        if (type == Cultist) {
+            return QString("仪式：%1/3").arg(ritualCount + 1);
+        }
         return QString("增益：强化自身");
-    case Debuff:
-        return QString("减益：削弱玩家");
+    case Debuff_Weak:
+        return QString("施加虚弱：%1层").arg(intentValue);
+    case Debuff_Vulnerable:
+        return QString("施加易伤：%1层").arg(intentValue);
     case Special:
         return QString("特殊行动");
     default:
         return "未知意图";
     }
+}
+
+void Enemy::endTurn() {
+    // 减少状态层数
+    if (vulnerable > 0) vulnerable--;
+    if (weak > 0) weak--;
+    if (frail > 0) frail--;
+
+    qDebug() << name << "回合结束，状态层数 - 易伤:" << vulnerable
+             << "虚弱:" << weak << "脆弱:" << frail;
 }
 
 void Enemy::takeDamage(int amount) {
@@ -148,38 +246,20 @@ void Enemy::gainBlock(int amount) {
     qDebug() << name << "获得" << actualBlock << "点格挡，总格挡:" << block;
 }
 
+void Enemy::gainStrength(int amount) {
+    strength += amount;
+    qDebug() << name << "获得" << amount << "点力量，总力量:" << strength;
+}
+
+
+// 计算实际攻击伤害（考虑力量和状态）
 int Enemy::getAttackDamage() const {
-    int damage = calculateActualDamage(intentValue);
-    return damage;
-}
+    int damage = intentValue;
 
-void Enemy::addStatus(const QString& status, int value) {
-    if (status == "vulnerable") {
-        vulnerable += value;
-        qDebug() << name << "获得" << value << "层易伤";
-    } else if (status == "weak") {
-        weak += value;
-        qDebug() << name << "获得" << value << "层虚弱";
-    } else if (status == "frail") {
-        frail += value;
-        qDebug() << name << "获得" << value << "层脆弱";
-    }
-}
+    // 加上力量加成
+    damage += strength;
 
-void Enemy::endTurn() {
-    // 减少状态层数
-    if (vulnerable > 0) vulnerable--;
-    if (weak > 0) weak--;
-    if (frail > 0) frail--;
-
-    qDebug() << name << "回合结束，状态层数 - 易伤:" << vulnerable
-             << "虚弱:" << weak << "脆弱:" << frail;
-}
-
-int Enemy::calculateActualDamage(int baseDamage) const {
-    int damage = baseDamage;
-
-    // 虚弱效果：伤害-25%
+    // 虚弱效果
     if (weak > 0) {
         damage = damage * 0.75;
     }
@@ -187,27 +267,11 @@ int Enemy::calculateActualDamage(int baseDamage) const {
     return damage;
 }
 
-int Enemy::calculateActualBlock(int baseBlock) const {
-    int block = baseBlock;
-
-    // 脆弱效果：格挡-25%
-    if (frail > 0) {
-        block = block * 0.75;
-    }
-
-    return block;
-}
-
 QString Enemy::getStatusText() const {
-    QStringList statuses;
-
-    if (vulnerable > 0) statuses << QString("易伤%1").arg(vulnerable);
-    if (weak > 0) statuses << QString("虚弱%1").arg(weak);
-    if (frail > 0) statuses << QString("脆弱%1").arg(frail);
-
-    if (statuses.isEmpty()) {
-        return "无状态";
-    }
-
-    return statuses.join(" ");
+    QString text = "";
+    if (vulnerable > 0) text += QString("易伤:%1 ").arg(vulnerable);
+    if (weak > 0) text += QString("虚弱:%1 ").arg(weak);
+    if (frail > 0) text += QString("脆弱:%1 ").arg(frail);
+    if (artifact > 0) text += QString("人工制品:%1 ").arg(artifact);
+    return text;
 }

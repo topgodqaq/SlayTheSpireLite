@@ -12,11 +12,13 @@ QMAKE_CXXFLAGS += -std=c++17
 
 SOURCES += \
     main.cpp \
+    src/battle/battlecontroller.cpp \
     src/core/card.cpp \
     src/core/enemy.cpp \
     src/core/player.cpp
 
 HEADERS += \
+    src/battle/battlecontroller.h \
     src/core/card.h \
     src/core/enemy.h \
     src/core/player.h

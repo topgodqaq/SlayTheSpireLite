@@ -3,29 +3,35 @@
 
 #include <QString>
 #include <QVector>
-#include <QMap>
 
 class Enemy {
 public:
     // 敌人类型
     enum Type {
-        Slime,      // 史莱姆
-        Goblin,     // 哥布林
-        Cultist,    // 邪教徒
-        Sentinel,   // 哨卫
+        Slime_A,    // 史莱姆A（虚弱型）
+        Slime_B,    // 史莱姆B（易伤型）
+        Cultist,    // 邪教徒（仪式机制）
+        Sentinel,   // 哨卫（人工制品）
         Boss        // BOSS
     };
 
-    // 敌人意图
+    // 敌人意图（将 Intent 和 Debuff 合并）
     enum Intent {
-        Attack,     // 攻击
-        Block,      // 防御
-        Buff,       // 增益
-        Debuff,     // 减益
+        // 基础行动
+        Attack,         // 攻击
+        MultiAttack,    // 多段攻击
+        Block,          // 防御
+        Buff,           // 增益
+
+        // Debuff 类型
+        Debuff_Weak,       // 给予玩家虚弱
+        Debuff_Vulnerable, // 给予玩家易伤
+        Debuff_Frail,      // 给予玩家脆弱
+
         Special     // 特殊行动
     };
 
-    Enemy(QString name = "未命名敌人", int maxHp = 30, Type type = Slime);
+    Enemy(QString name = "未命名敌人", int maxHp = 30, Type type = Slime_A);
 
     // 基础属性
     QString getName() const { return name; }
@@ -33,23 +39,40 @@ public:
     int getMaxHp() const { return maxHp; }
     int getBlock() const { return block; }
     Type getType() const { return type; }
+    bool hasArtifact() const { return artifact > 0; } // 是否有人工制品
 
     // 意图系统
     Intent getNextIntent() const { return nextIntent; }
     QString getIntentDescription() const;
     int getIntentValue() const { return intentValue; }
+    int getIntentTimes() const { return intentTimes; }
     void generateIntent();  // 生成下回合意图
+
+    // 辅助方法
+    bool isAttackIntent() const { return nextIntent == Attack; }
+    bool isBlockIntent() const { return nextIntent == Block; }
+    bool isBuffIntent() const { return nextIntent == Buff; }
+    bool isDebuffIntent() const;  // 判断是否是debuff意图
+    bool isSpecialIntent() const { return nextIntent == Special; }
+    QString getDebuffType() const;
 
     // 战斗操作
     void takeDamage(int amount);
     void gainBlock(int amount);
     bool isAlive() const { return currentHp > 0; }
+    void gainStrength(int amount);
+
+    // 邪教徒仪式系统
+    void processCultistRitual();
+    int getRitualCount() const { return ritualCount; }
+    bool isRitualComplete() const { return ritualCount >= 3;}
 
     // 状态效果
     int getVulnerable() const { return vulnerable; }
     int getWeak() const { return weak; }
     int getFrail() const { return frail; }
     void addStatus(const QString& status, int value);
+    void reduceArtifact() { artifact--; }
     void endTurn();  // 回合结束时减少状态层数
 
     // 属性操作
@@ -59,6 +82,9 @@ public:
     // 文本描述
     QString getStatusText() const;
 
+    // 特殊机制
+    void triggerArtifact();  // 触发人工制品
+
 private:
     // 基础属性
     QString name;
@@ -66,9 +92,12 @@ private:
     int maxHp;
     int currentHp;
     int block = 0;
+    int strength = 0;  // 力量
+    int artifact = 0;  // 人工制品层数
 
     // 攻击属性
     int baseAttackDamage = 6;
+    int intentTimes = 1;  // 攻击次数（用于多段攻击）
 
     // 状态效果
     int vulnerable = 0;  // 易伤：受到的伤害+50%
@@ -79,15 +108,20 @@ private:
     Intent nextIntent = Attack;
     int intentValue = 0;  // 意图数值（攻击伤害、格挡值等）
 
+    // 邪教徒仪式
+    int ritualCount = 0;  // 仪式计数
+    bool ritualStarted = false;  // 仪式是否开始
+
     // 计算实际属性（考虑状态影响）
     int calculateActualDamage(int baseDamage) const;
     int calculateActualBlock(int baseBlock) const;
 
     // 根据类型生成意图
-    void generateSlimeIntent();
-    void generateGoblinIntent();
-    void generateCultistIntent();
-    void generateSentinelIntent();
+    void generateSlimeAIntent();   // 史莱姆A：60%攻击 40%虚弱
+    void generateSlimeBIntent();   // 史莱姆B：60%攻击 40%易伤
+    void generateCultistIntent();  // 邪教徒：仪式系统
+    void generateSentinelIntent(); // 哨卫：60%多段 40%单段
+    void generateBossIntent();     // BOSS
 };
 
 #endif // ENEMY_H

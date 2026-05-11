@@ -32,6 +32,7 @@ public:
     void takeDamage(int times, int amount);
     void gainBlock(int amount);
     void heal(int amount);
+    void clearBlock();
 
     // 卡组操作
     void addCardToDeck(const Card& card);

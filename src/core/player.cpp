@@ -126,28 +126,19 @@ void Player::takeDamage(int amount) {
     int damage = actualDamage - block;
     if (damage > 0) {
         currentHp -= damage;
+        block = 0;
         if (currentHp < 0) currentHp = 0;
         qDebug() << "实际扣血" << damage << "点，剩余生命" << currentHp;
     } else {
         qDebug() << "格挡完全抵挡了伤害";
+        block -= amount;
     }
-
-    block = 0;  // 格挡被消耗
 }
 
 void Player::takeDamage(int times, int amount) {
     qDebug() << "受到" << times << "段攻击，每段" << amount << "点伤害";
     for (int i = 0; i < times; i++) {
-        int actualDamage = calculateDamageTaken(amount);
-        int damage = actualDamage - block;
-
-        if (damage > 0) {
-            currentHp -= damage;
-            if (currentHp < 0) currentHp = 0;
-        }
-
-        block = 0;  // 第一段攻击就消耗完所有格挡
-        break;      // 后续攻击直接扣血
+        takeDamage(amount);
     }
 }
 
@@ -265,4 +256,8 @@ QString Player::getStatusText() const {
     }
 
     return statuses.join(" ");
+}
+
+void Player::clearBlock() {
+    this->block = 0;
 }
