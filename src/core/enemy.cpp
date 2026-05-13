@@ -248,10 +248,10 @@ QString Enemy::getIntentDescription() const
     switch (nextIntent)
     {
     case Attack:
-        return QString("攻击：%1点伤害").arg(intentValue);
+        return QString("攻击：%1点伤害").arg(getAttackDamage());
     case MultiAttack:
         qDebug("2");
-        return QString("多重攻击：%1×%2点伤害").arg(intentTimes).arg(intentValue);
+        return QString("多重攻击：%1×%2点伤害").arg(intentTimes).arg(getAttackDamage());
     case Block:
         return QString("防御：获得%1点格挡").arg(intentValue);
     case Buff_RITUAL:
