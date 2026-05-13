@@ -15,13 +15,21 @@ SOURCES += \
     src/battle/battlecontroller.cpp \
     src/core/card.cpp \
     src/core/enemy.cpp \
-    src/core/player.cpp
+    src/core/player.cpp \
+    ui/battleview.cpp \
+    ui/cardwidget.cpp \
+    ui/enemywidget.cpp \
+    ui/playerwidget.cpp
 
 HEADERS += \
     src/battle/battlecontroller.h \
     src/core/card.h \
     src/core/enemy.h \
-    src/core/player.h
+    src/core/player.h \
+    ui/battleview.h \
+    ui/cardwidget.h \
+    ui/enemywidget.h \
+    ui/playerwidget.h
 
 # 资源文件（可选）
 RESOURCES += \
@@ -33,3 +41,5 @@ MOC_DIR = $$OUT_PWD/moc
 OBJECTS_DIR = $$OUT_PWD/obj
 RCC_DIR = $$OUT_PWD/rcc
 UI_DIR = $$OUT_PWD/ui
+
+LIBS += -lmingwex

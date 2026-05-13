@@ -29,7 +29,8 @@ public:
          int value = 0,
          const QString& description = "",
          Rarity rarity = Common,
-         bool isupgrade = false);
+         bool isupgrade = false,
+         const QString& imagePath = "");
 
     QString id;          // 唯一标识
     QString name;        // 卡牌名称
@@ -39,10 +40,13 @@ public:
     int cost;            // 能量消耗
     int value;           // 基础数值（伤害/格挡等）
     bool isupgrade;      //是否升级
+    QString imagePath;
 
     bool canPlay(int energy) const;
     QString getTypeString() const;
     QColor getTypeColor() const;
+    const QString& getImagePath() const { return imagePath; }
+    void setImagePath(const QString& path) { imagePath = path; }
 
     // 卡牌升级
     bool upgrade();

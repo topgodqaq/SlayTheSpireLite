@@ -6,7 +6,8 @@ Card::Card(const QString& id,
            int value,
            const QString& description,
            Rarity rarity,
-           bool isupgrade)
+           bool isupgrade,
+           const QString& imagePath)
     : id(id)
     , name(name)
     , type(type)
@@ -14,6 +15,7 @@ Card::Card(const QString& id,
     , cost(cost)
     , value(value)
     , isupgrade(isupgrade)
+    , imagePath(imagePath)
 {
     // 如果未提供描述，生成默认描述
     if (description.isEmpty()) {

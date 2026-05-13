@@ -1,0 +1,14 @@
+obj/main.o
+obj/battlecontroller.o
+obj/card.o
+obj/enemy.o
+obj/player.o
+obj/battleview.o
+obj/cardwidget.o
+obj/enemywidget.o
+obj/playerwidget.o
+obj/moc_battlecontroller.o
+obj/moc_battleview.o
+obj/moc_cardwidget.o
+obj/moc_enemywidget.o
+obj/moc_playerwidget.o
