@@ -26,6 +26,7 @@ BattleView::~BattleView()
 void BattleView::setupUI()
 {
     centralWidget = new QWidget;
+    centralWidget->setStyleSheet("background: transparent;");
     setCentralWidget(centralWidget);
 
     mainLayout = new QVBoxLayout(centralWidget);
@@ -37,7 +38,7 @@ void BattleView::setupUI()
     topLayout->addWidget(playerWidget);
 
     battleArea = new QWidget;
-    battleArea->setStyleSheet("background: #f7f7f7; border: 1px dashed #ccc;");
+    battleArea->setStyleSheet("background: transparent; border: 1px dashed #ccc;");
     battleArea->setMinimumSize(240, 260);
     battleArea->installEventFilter(this);
     QVBoxLayout *battleLayout = new QVBoxLayout(battleArea);
